@@ -560,13 +560,44 @@ figuras~\ref{fig:p7-captura9} y \ref{fig:p7-captura10}.
 
 \section{Sesión R0--R1 apagada}
 % Paso 8 (+1.5 junto con el paso 7).
+Para observar el efecto de retirar uno de los caminos disponibles, se
+desactivó en R0 la sesión BGP con R1. La dirección 192.168.1.2 corresponde
+a la interfaz de R1 conectada a la red 192.168.1.0/24:
 \begin{salida}
+configure terminal
 router bgp 65000
-   neighbor 192.168.1.Z shutdown
+   neighbor 192.168.1.2 shutdown
+end
 \end{salida}
-\pendiente{reemplazar Z por la IP de R1; verificar que todos los ping funcionan; explicar por qué, en comparación con el paso 7.}
 
-\captura{img/paso8/ping.png}{Ping entre los computadores con la sesión R0--R1 apagada.}{fig:p8-ping}
+Este comando no apaga R1 ni desconecta sus interfaces. Solamente desactiva
+el intercambio BGP entre R0 y R1. Como consecuencia, R1 deja de recibir
+anuncios directamente desde R0 y retira las rutas aprendidas por esa
+sesión. BGP vuelve a evaluar los caminos disponibles y puede utilizar
+alternativas, como la ruta a través de R2. El cambio permite observar cómo
+el protocolo adapta sus decisiones cuando un vecino deja de estar
+disponible.
+
+La comparación con el paso anterior también muestra el efecto del
+\field{AS-PATH prepend}: antes de apagar la sesión, la ruta anunciada
+directamente a R2 parecía menos atractiva que la aprendida por R1. Al
+desactivar R0--R1, ese camino preferido deja de estar disponible y los
+routers deben seleccionar las rutas restantes. Sin embargo, esto no
+garantizó conectividad completa en las pruebas realizadas. Después del
+\code{shutdown}, cuatro de los seis pings funcionaron:
+PC1 alcanzó a PC2, PC2 alcanzó a PC1 y PC3, y PC3 alcanzó a PC2. Los dos
+casos que continuaron fallando fueron PC1 hacia 192.168.4.11 y PC3 hacia
+192.168.0.11.
+
+Esto indica que el \code{shutdown} sí modificó la disponibilidad de un
+camino, pero no resolvió todos los problemas de enrutamiento. Para que un
+\code{ping} funcione se necesita tanto una ruta desde el origen hasta la
+red destino como una ruta de retorno para las respuestas. Las capturas
+muestran el comando aplicado y las pruebas de conectividad posteriores.
+
+\captura{img/paso8/Captura_1.png}{Comando \code{neighbor 192.168.1.2 shutdown} aplicado en R0 para desactivar la sesión con R1.}{fig:p8-captura1}
+\captura{img/paso8/Captura_2.png}{Pruebas de ping posteriores al apagado de la sesión R0--R1.}{fig:p8-captura2}
+\captura{img/paso8/Captura_3.png}{Pruebas restantes de ping posteriores al apagado de la sesión R0--R1.}{fig:p8-captura3}
 
 \section{Declaración de uso de IA}
 En la elaboración de este informe se utilizó un modelo de inteligencia artificial, Claude (Opus 5.5), para editar el template de LaTeX, organizar secciones y transcribir el enunciado.
