@@ -445,17 +445,86 @@ como alternativa si la sesión con R1 falla.
 \section{Sesión R1--R2 y filtros en R3 y R4}
 % Paso 7 (+1.5 junto con el paso 8).
 
+\subsection{Situación inicial}
+La sesión BGP entre R1 y R2 ya había sido configurada en el paso 5, pues
+ambos routers comparten la red 192.168.10.0/24. De todas formas, se
+volvieron a ingresar los comandos de vecinos durante la configuración, pero
+eso no cambió las sesiones ni la topología: el cambio efectivo de este paso
+fue aplicar las nuevas prefix-lists de salida. Antes de aplicar los filtros se
+revisó \code{show ip bgp} en R1 y los anuncios de R3 hacia R1. Esto
+permitió observar que R3 anunciaba a sus vecinos rutas que no correspondían
+exclusivamente a su propia red, por lo que podía actuar como router de
+tránsito.
+
+\captura{img/paso7/Captura_1.png}{Tabla BGP inicial de R1 antes de aplicar los filtros.}{fig:p7-captura1}
+\captura{img/paso7/Captura_2.png}{Rutas anunciadas inicialmente por R3 hacia sus vecinos.}{fig:p7-captura2}
+
 \subsection{Comandos}
-\pendiente{comandos agregados a R1, R2, R3 y R4.}
+En R3 se creó una prefix-list que permite únicamente la red donde está
+PC2, y se aplicó de salida a sus tres vecinos BGP:
+\begin{salida}
+R3_Enredados# configure terminal
+R3_Enredados(config)# ip prefix-list solo_R3 seq 10 permit 192.168.3.0/24
+R3_Enredados(config)# router bgp 65003
+R3_Enredados(config-router)# neighbor 192.168.10.1 prefix-list solo_R3 out
+R3_Enredados(config-router)# neighbor 192.168.10.2 prefix-list solo_R3 out
+R3_Enredados(config-router)# neighbor 192.168.10.4 prefix-list solo_R3 out
+R3_Enredados(config-router)# end
+R3_Enredados# write
+R3_Enredados# clear ip bgp 192.168.10.1 soft out
+R3_Enredados# clear ip bgp 192.168.10.2 soft out
+R3_Enredados# clear ip bgp 192.168.10.4 soft out
+\end{salida}
+
+De forma análoga, en R4 se permitió únicamente la red donde está PC3:
+\begin{salida}
+R4_Enredados# configure terminal
+R4_Enredados(config)# ip prefix-list solo_R4 seq 10 permit 192.168.4.0/24
+R4_Enredados(config)# router bgp 65004
+R4_Enredados(config-router)# neighbor 192.168.10.1 prefix-list solo_R4 out
+R4_Enredados(config-router)# neighbor 192.168.10.2 prefix-list solo_R4 out
+R4_Enredados(config-router)# neighbor 192.168.10.3 prefix-list solo_R4 out
+R4_Enredados(config-router)# end
+R4_Enredados# write
+R4_Enredados# clear ip bgp 192.168.10.1 soft out
+R4_Enredados# clear ip bgp 192.168.10.2 soft out
+R4_Enredados# clear ip bgp 192.168.10.3 soft out
+\end{salida}
+
+La configuración de R3 y R4, junto con la actualización de sus anuncios,
+se muestra en la figura~\ref{fig:p7-captura3}.
 
 \subsection{Por qué los filtros cumplen lo pedido}
-\pendiente{explicación.}
+La entrada \code{solo\_R3} permite 192.168.3.0/24 y bloquea implícitamente
+cualquier otra red. Al aplicarla con \code{prefix-list solo_R3 out} a cada
+vecino, R3 solo anuncia la red de PC2. De manera equivalente,
+\code{solo\_R4} hace que R4 solo anuncie 192.168.4.0/24, la red de PC3.
+No se necesitó un route-map porque no se modificó ningún atributo del
+anuncio: únicamente se filtraron prefijos.
+
+Los filtros se aplicaron a los tres vecinos de cada router, incluyendo el
+otro router de borde. Así, R3 y R4 no pueden convertirse en tránsito entre
+R1 y R2 ni anunciar las rutas de R0 o del otro router de borde. El filtro
+solo afecta los anuncios de salida; R3 y R4 siguen recibiendo las rutas
+desde R1 y R2, lo que permite que aprendan las rutas de retorno. El anuncio
+de 192.168.10.0/24 también queda bloqueado, pero esto no afecta la
+conectividad porque R1 y R2 ya tienen esa red directamente conectada.
 
 \subsection{Sesiones BGP resultantes}
-\pendiente{diagrama de las sesiones BGP y de lo que se anuncia por cada una (img/bgp\_paso7.dot, generado con sh img/diagramas.sh).}
+Las sesiones eBGP entre routers permanecen establecidas: R0 mantiene
+sesiones con R1 y R2; R1 y R2 mantienen su sesión entre sí y sesiones con
+R3 y R4; y R3 y R4 mantienen una sesión entre ellos. Las sesiones no se
+eliminan, sino que se restringen los prefijos que R3 y R4 anuncian. R3
+anuncia solamente 192.168.3.0/24 y R4 solamente 192.168.4.0/24.
 
-\captura{img/paso7/R3.png}{Filtros en R3.}{fig:p7-r3}
-\captura{img/paso7/R4.png}{Filtros en R4.}{fig:p7-r4}
+\captura{img/paso7/Captura_3.png}{Configuración de las prefix-lists en R3 y R4 y actualización de los anuncios mediante \code{clear ip bgp} \code{soft out}.}{fig:p7-captura3}
+\captura{img/paso7/Captura_4.png}{Prefix-list de R3 y rutas anunciadas por R3 después de aplicar el filtro.}{fig:p7-captura4}
+\captura{img/paso7/Captura_5.png}{Rutas anunciadas por R4 después de aplicar \code{solo\_R4}.}{fig:p7-captura5}
+\captura{img/paso7/Captura_6.png}{Tabla BGP de R1 después de actualizar los anuncios.}{fig:p7-captura6}
+\captura{img/paso7/Captura_7.png}{Resumen de las sesiones BGP de R3 después de aplicar el filtro.}{fig:p7-captura7}
+\captura{img/paso7/Captura_8.png}{Resumen de las sesiones BGP de R4 después de aplicar el filtro.}{fig:p7-captura8}
+
+\captura{img/paso7/diagrama.png}{Diagrama de las sesiones BGP y de los prefijos anunciados por cada router.}{fig:p7-diagrama}
 
 \subsection{Test de ping}
 \begin{table}[ht]
@@ -466,16 +535,28 @@ como alternativa si la sesión con R1 falla.
 		\toprule
 		Origen & Destino & ¿Responde? \\
 		\midrule
-		PC1 & PC2 & \pendiente{} \\
-		PC1 & PC3 & \pendiente{} \\
-		PC2 & PC1 & \pendiente{} \\
-		PC2 & PC3 & \pendiente{} \\
-		PC3 & PC1 & \pendiente{} \\
-		PC3 & PC2 & \pendiente{} \\
+		PC1 & PC2 & Sí \\
+		PC1 & PC3 & No \\
+		PC2 & PC1 & Sí \\
+		PC2 & PC3 & Sí \\
+		PC3 & PC1 & No \\
+		PC3 & PC2 & Sí \\
 		\bottomrule
 	\end{tabular}
 \end{table}
-\pendiente{observaciones sobre los ping que fallan, si alguno falla.}
+
+El resultado observado fue que cuatro de los seis pings funcionaron. El
+ping desde PC1 hacia 192.168.4.11 falló y mostró 100\% de pérdida de
+paquetes. El ping desde PC3 hacia 192.168.0.11 quedó esperando respuesta y
+no recibió paquetes. Los otros cuatro pares respondieron correctamente:
+PC1 alcanzó 192.168.3.11, PC2 alcanzó 192.168.0.11 y 192.168.4.11, y PC3
+alcanzó 192.168.3.11. Por lo tanto, la conectividad entre todos los
+computadores no quedó completamente resuelta en esta etapa. Las capturas de
+las pruebas desde PC1 y PC2, y desde PC3, se incluyen en las
+figuras~\ref{fig:p7-captura9} y \ref{fig:p7-captura10}.
+
+\captura{img/paso7/Captura_9.png}{Pruebas de conectividad desde PC1 y PC2 después de aplicar los filtros.}{fig:p7-captura9}
+\captura{img/paso7/Captura_10.png}{Pruebas de conectividad desde PC3 después de aplicar los filtros.}{fig:p7-captura10}
 
 \section{Sesión R0--R1 apagada}
 % Paso 8 (+1.5 junto con el paso 7).
