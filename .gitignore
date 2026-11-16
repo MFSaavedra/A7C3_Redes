@@ -33,3 +33,6 @@ desktop.ini
 # Einar: la ISO y la VM viven fuera del repositorio (~/VirtualBox VMs/Einar)
 *.iso
 *.iso.part
+
+# Material del curso en PDF (enunciado y ejemplos), solo para consulta local
+/*.pdf
