@@ -361,23 +361,86 @@ la primera imagen, y la configuración y el resumen de R4 en la segunda.
 
 \section{Route-maps en R0}
 % Paso 6 (+1.0).
+Para modificar la preferencia de entrada hacia la red de PC1 se trabajó
+únicamente en R0. Primero se creó una prefix-list que selecciona
+192.168.0.0/24 y luego se definieron dos route-maps: uno para el anuncio
+hacia R1 y otro para el anuncio hacia R2.
+
 \begin{salida}
+configure terminal
 ip prefix-list salida seq 10 permit 192.168.0.0/24
 route-map salida_R1 permit 10
    match ip address prefix-list salida
+exit
 route-map salida_R2 permit 10
    match ip address prefix-list salida
    set as-path prepend 65000 65000 65000 65000
+exit
+router bgp 65000
+ neighbor 192.168.1.2 remote-as 65001
+ neighbor 192.168.1.2 route-map salida_R1 out
+ neighbor 192.168.2.2 remote-as 65002
+ neighbor 192.168.2.2 route-map salida_R2 out
+end
+write
 \end{salida}
 
 \subsection{Qué hace cada route-map}
-\pendiente{explicar salida\_R1 y salida\_R2.}
+La prefix-list \code{salida} contiene solamente la red
+192.168.0.0/24, donde se encuentra PC1. Por lo tanto, las rutas que no
+coinciden con ella quedan descartadas por el \code{deny} implícito de la
+prefix-list. El route-map \code{salida\_R1} anuncia a R1 esa red sin
+modificar su AS-PATH. En cambio, \code{salida\_R2} agrega cuatro veces el
+ASN 65000 mediante \code{set as-path prepend}. El modificador
+\code{out} indica que el filtro se aplica a los anuncios que R0 envía al
+vecino correspondiente.
+
+Como los route-maps se aplican a todos los anuncios de R0, las redes
+192.168.1.0/24 y 192.168.2.0/24 tampoco se anuncian a esos vecinos. Esto
+no impide la conectividad de los computadores, porque son redes de enlace
+entre routers y no las redes donde están PC1, PC2 y PC3. Después de cambiar
+la configuración se actualizaron las sesiones con:
+\begin{salida}
+clear ip bgp 192.168.1.2 soft out
+clear ip bgp 192.168.2.2 soft out
+\end{salida}
 
 \subsection{Ruta preferida por R2 hacia R0}
-\pendiente{qué ruta prefiere R2 para llegar a R0 y por qué, apoyado en show ip bgp.}
+R2 aprende dos caminos hacia 192.168.0.0/24. El anuncio directo desde R0
+recibe cuatro repeticiones adicionales de 65000 y queda con el
+AS-PATH \code{65000 65000 65000 65000 65000}, de largo 5. Por otro lado,
+R2 aprende la ruta a través de R1 con el AS-PATH
+\code{65001 65000}, de largo 2. Como BGP prefiere, entre otras
+condiciones, el AS-PATH más corto, R2 selecciona la ruta vía R1, aunque R0
+esté conectado directamente a R2.
 
-\captura{img/paso6/config.png}{Configuración de los route-maps en R0.}{fig:p6-config}
-\captura{img/paso6/bgp_R2.png}{Tabla BGP de R2 tras aplicar los route-maps.}{fig:p6-bgp-r2}
+\begin{table}[ht]
+	\centering
+	\caption{Rutas hacia 192.168.0.0/24 después de aplicar los route-maps.}
+	\label{tab:p6-rutas}
+	\begin{tabular}{llll}
+		\toprule
+		Router & Vía R1 & Vía R2 & Ruta elegida \\
+		\midrule
+		R1 & 65000 (directa) & Rechazada por su propio ASN & Directa a R0 \\
+		R2 & 65001 65000 (largo 2) & 65000 65000 65000 65000 65000 (largo 5) & Vía R1 \\
+		R3 & 65001 65000 (largo 2) & 65002 65001 65000 (largo 3) & Vía R1 \\
+		R4 & 65001 65000 (largo 2) & 65002 65001 65000 (largo 3) & Vía R1 \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+R3 y R4 reciben desde R2 su mejor ruta, que es la aprendida desde R1.
+Por eso el anuncio que reciben por R2 tiene el AS-PATH
+\code{65002 65001 65000}, de largo 3, y no el camino directo inflado
+que R0 había enviado originalmente a R2. En consecuencia, todos los
+routers externos prefieren la entrada por R1. Esto constituye una forma de
+traffic engineering: se modifica el AS-PATH anunciado para controlar la
+entrada del tráfico sin cambiar la topología física, dejando la vía por R2
+como alternativa si la sesión con R1 falla.
+
+\captura{img/paso6/Captura_1.png}{Configuración en R0 de la prefix-list, los route-maps y su aplicación a los vecinos BGP.}{fig:p6-captura1}
+\captura{img/paso6/Captura_2.png}{Anuncios de R0 hacia R1 y R2, junto con la tabla BGP usada para comparar los AS-PATH y la ruta elegida.}{fig:p6-captura2}
 
 \section{Sesión R1--R2 y filtros en R3 y R4}
 % Paso 7 (+1.5 junto con el paso 8).
