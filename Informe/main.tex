@@ -301,7 +301,18 @@ se aprenderán posteriormente mediante BGP.
 
 \section{BGP inicial}
 % Paso 5 (+0.7).
-Cada router usa el ASN 65000 + N, donde N es su número, y tiene como vecinos a los routers con los que comparte una red. \pendiente{indicar qué sesiones se configuraron; ver la nota del paso 5 en INSTRUCCIONES.md sobre la sesión R1--R2.}
+Se configuró cada router como un sistema autónomo BGP independiente. La
+asignación de ASN fue \code{R0\_Enredados}: 65000,
+\code{R1\_Enredados}: 65001, \code{R2\_Enredados}: 65002,
+\code{R3\_Enredados}: 65003 y \code{R4\_Enredados}: 65004.
+
+En cada router se configuraron vecinos mediante el comando \code{neighbor},
+indicando la dirección IP del vecino y su ASN remoto. Se consideraron como
+vecinos BGP todos los routers que comparten una red: R0 mantiene sesiones con
+R1 y R2; R1 mantiene sesiones con R0, R2, R3 y R4; R2 mantiene sesiones con
+R0, R1, R3 y R4; R3 mantiene sesiones con R1, R2 y R4; y R4 mantiene
+sesiones con R1, R2 y R3. Así, la red compartida 192.168.10.0/24 permite
+las sesiones entre R1, R2, R3 y R4.
 
 \begin{table}[ht]
 	\centering
@@ -311,16 +322,42 @@ Cada router usa el ASN 65000 + N, donde N es su número, y tiene como vecinos a 
 		\toprule
 		Router (ASN) & Vecino (ASN) & IP del vecino \\
 		\midrule
-		\pendiente{completar} & & \\
+		R0 (65000) & R1 (65001) & 192.168.1.2 \\
+		R0 (65000) & R2 (65002) & 192.168.2.2 \\
+		R1 (65001) & R0 (65000) & 192.168.1.1 \\
+		R1 (65001) & R2 (65002) & 192.168.10.2 \\
+		R1 (65001) & R3 (65003) & 192.168.10.3 \\
+		R1 (65001) & R4 (65004) & 192.168.10.4 \\
+		R2 (65002) & R0 (65000) & 192.168.2.1 \\
+		R2 (65002) & R1 (65001) & 192.168.10.1 \\
+		R2 (65002) & R3 (65003) & 192.168.10.3 \\
+		R2 (65002) & R4 (65004) & 192.168.10.4 \\
+		R3 (65003) & R1 (65001) & 192.168.10.1 \\
+		R3 (65003) & R2 (65002) & 192.168.10.2 \\
+		R3 (65003) & R4 (65004) & 192.168.10.4 \\
+		R4 (65004) & R1 (65001) & 192.168.10.1 \\
+		R4 (65004) & R2 (65002) & 192.168.10.2 \\
+		R4 (65004) & R3 (65003) & 192.168.10.3 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-\captura{img/paso5/R0.png}{Configuración BGP de R0.}{fig:p5-r0}
-\captura{img/paso5/R1.png}{Configuración BGP de R1.}{fig:p5-r1}
-\captura{img/paso5/R2.png}{Configuración BGP de R2.}{fig:p5-r2}
-\captura{img/paso5/R3.png}{Configuración BGP de R3.}{fig:p5-r3}
-\captura{img/paso5/R4.png}{Configuración BGP de R4.}{fig:p5-r4}
+Además de los vecinos, cada router anuncia mediante \code{network} las
+redes directamente conectadas. R0 anuncia 192.168.0.0/24,
+192.168.1.0/24 y 192.168.2.0/24; R1 anuncia 192.168.1.0/24 y
+192.168.10.0/24; R2 anuncia 192.168.2.0/24 y 192.168.10.0/24; R3 anuncia
+192.168.3.0/24 y 192.168.10.0/24; y R4 anuncia 192.168.4.0/24 y
+192.168.10.0/24. De esta forma, BGP puede propagar las redes de los
+computadores hacia los routers remotos y construir las rutas necesarias.
+
+Finalmente, se ejecutó \code{show ip bgp summary} en los routers para revisar
+el estado de las sesiones y la cantidad de prefijos recibidos. También se
+consultó \code{show ip route} para verificar las rutas aprendidas. Las
+capturas muestran la configuración BGP y el resumen de R0, R1, R2 y R3 en
+la primera imagen, y la configuración y el resumen de R4 en la segunda.
+
+\captura{img/paso4/Captura_1.png}{Configuración BGP y resumen de las sesiones en R0, R1, R2 y R3.}{fig:p5-captura1}
+\captura{img/paso4/Captura_2.png}{Configuración BGP y resumen de las sesiones en R4.}{fig:p5-captura2}
 
 \section{Route-maps en R0}
 % Paso 6 (+1.0).
