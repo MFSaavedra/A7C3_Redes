@@ -148,6 +148,11 @@
 % Paso 1.
 El grupo se llama Enredados. Todos los equipos virtuales llevan ese nombre como sufijo: el router R0 se llama \code{R0\_Enredados}, el computador PC1 se llama \code{PC1\_Enredados}, y así con el resto.
 
+En una de las pantallas de configuración, R1 aparece temporalmente como
+\code{R1\_\_Enredados}, con dos guiones bajos. Se trata de un error
+tipográfico al crear el laboratorio; en la configuración y en el resto del
+informe el nombre utilizado es \code{R1\_Enredados}.
+
 Einar se ejecutó como máquina virtual en VirtualBox, a partir de la imagen \code{einar1.0.iso} entregada por el curso: Linux 32 bits, sin disco virtual. Los routers de Einar usan Quagga 0.99.3, cuya consola sigue la sintaxis de Cisco.
 
 \section{Ejemplo: configurando rutas con Einar}
@@ -210,8 +215,10 @@ Lo que más costó al ejecutar el ejemplo no fueron las rutas, sino el entorno d
 Lo que más ayudó a entender las tablas de rutas fue compararlas antes y después de agregar las rutas. Mientras un router solo conoce sus redes directamente conectadas, un paquete hacia una red remota no tiene por dónde seguir, y basta una línea \code{ip route} en cada router para que su tabla tenga una ruta S hacia la otra red.
 
 También ayudó una prueba que no está en el ejemplo: con la ruta agregada solo en R1, el ping de PC1 a PC2 seguía fallando, y no solo por las respuestas. Repitiendo el ping con una captura de \code{tcpdump} en R2 y en PC2, las solicitudes llegaban a R2 pero no a PC2 (figura~\ref{fig:p2-un-sentido}). Einar activa en todos los equipos el filtro de ruta inversa (\code{rp\_filter}), que descarta los paquetes cuyo origen no se podría alcanzar de vuelta por la interfaz en que llegaron, y R2 no tenía ninguna ruta hacia 192.168.1.0/24. El contador \code{in\_martian\_src} de R2, en \code{/proc/net/stat/rt\_cache}, marcaba 6: uno por cada solicitud descartada en las dos repeticiones. La ruta hace falta en ambos sentidos: sin la de vuelta no regresan las respuestas, y con este filtro ni siquiera avanzan las solicitudes.
+La lectura del contador se muestra en la figura~\ref{fig:p2-martian}.
 
 \captura{img/paso2/un_sentido.png}{Con la ruta agregada solo en R1, las solicitudes de PC1 llegan a la interfaz eth0 de R2 (izquierda), pero no a PC2 (derecha). Son dos repeticiones del mismo ping, con una captura en cada equipo.}{fig:p2-un-sentido}
+\captura{img/paso2/martian_R2.png}{Contador \code{in\_martian\_src} de R2 después de descartar las solicitudes por el filtro \code{rp\_filter}.}{fig:p2-martian}
 
 Configurar un router fue interesante porque la consola de Quagga imita la de los routers Cisco (\code{configure terminal}, \code{ip route}, \code{show ip route}, \code{write}), y porque cada comando tiene un efecto inmediato y visible en la tabla de rutas. A la vez, el ejemplo muestra el límite de las rutas estáticas. Aquí bastó una ruta por router, pero en una red más grande habría que escribir a mano una ruta por cada red remota en cada router, y corregirlas cada vez que la red cambia, que es lo que automatizan los protocolos de ruteo como BGP. Por último, \code{write} guarda la configuración en \code{/etc/quagga/Quagga.conf}, pero en Einar cada equipo arranca desde una copia nueva de su disco, así que la configuración se pierde al detener el laboratorio.
 
@@ -229,7 +236,8 @@ Configurar un router fue interesante porque la consola de Quagga imita la de los
 \section{Configuración de la red}
 % Paso 4 (+0.8).
 Se creó en Einar el laboratorio \code{Act7\_Enredados}, compuesto por 5 routers,
-3 computadores virtuales y 6 switches. Todos los dispositivos fueron nombrados
+3 computadores virtuales y 6 switches. La creación del laboratorio se muestra
+en la figura~\ref{fig:p4-paso1}. Todos los dispositivos fueron nombrados
 con el sufijo \code{\_Enredados}, por ejemplo,
 \code{R0\_Enredados}, \code{PC1\_Enredados} y \code{Switch1\_Enredados}.
 
@@ -249,10 +257,15 @@ red, y su gateway por defecto es la interfaz del router al que están
 conectados. Todas las interfaces tienen máscara /24, ancho de banda de
 100 Mbps y retardo de 0 ms.
 
+La cantidad de interfaces y los nombres de los routers se configuraron en
+la figura~\ref{fig:p4-paso2a}; los nombres de los switches aparecen en la
+figura~\ref{fig:p4-paso2b}.
+
 \begin{table}[ht]
 	\centering
 	\caption{Interfaces de cada equipo.}
 	\label{tab:interfaces}
+	\resizebox{\linewidth}{!}{%
 	\begin{tabular}{llllll}
 		\toprule
 		Equipo & Interfaz & Conectada a & IP & Red & Default gateway \\
@@ -272,16 +285,23 @@ conectados. Todas las interfaces tienen máscara /24, ancho de banda de
 		\code{PC2\_Enredados} & eth0 & \code{Switch5\_Enredados} & 192.168.3.11/24 & 192.168.3.0/24 & 192.168.3.1 \\
 		\code{PC3\_Enredados} & eth0 & \code{Switch6\_Enredados} & 192.168.4.11/24 & 192.168.4.0/24 & 192.168.4.1 \\
 		\bottomrule
-	\end{tabular}
+	\end{tabular}%
+	}
 \end{table}
 
-\captura{img/paso2/captura_1.png}{Paso 1 de 3: creación del laboratorio \code{Act7\_Enredados}, con 5 routers, 3 computadores y 6 switches.}{fig:p4-paso1}
-\captura{img/paso2/captura_2.png}{Paso 2 de 3: nombres e interfaces de los routers y computadores.}{fig:p4-paso2a}
-\captura{img/paso2/captura_3.png}{Paso 2 de 3: nombres de los switches y configuración restante de los dispositivos.}{fig:p4-paso2b}
-\captura{img/paso2/captura_4.png}{Paso 3 de 3: interfaces y conexiones de R0, R1 y R2.}{fig:p4-paso3a}
-\captura{img/paso2/captura_5.png}{Paso 3 de 3: interfaces y conexiones de R3 y R4.}{fig:p4-paso3b}
-\captura{img/paso2/captura_6.png}{Paso 3 de 3: configuración de PC1 y PC2.}{fig:p4-paso3c}
-\captura{img/paso2/captura_7.png}{Paso 3 de 3: configuración de PC3 y finalización del laboratorio.}{fig:p4-paso3d}
+Las conexiones y direcciones de R0 y R1 se muestran en la
+figura~\ref{fig:p4-paso3a}; las de R1 y R2, en la
+figura~\ref{fig:p4-paso3b}; las de R3 y R4, en la
+figura~\ref{fig:p4-paso3c}; y las de los tres computadores, en la
+figura~\ref{fig:p4-paso3d}.
+
+\captura{img/paso4/Captura_1.png}{Paso 1 de 3: creación del laboratorio \code{Act7\_Enredados}, con 5 routers, 3 computadores y 6 switches.}{fig:p4-paso1}
+\captura{img/paso4/Captura_2.png}{Paso 2 de 3: nombres e interfaces de los routers.}{fig:p4-paso2a}
+\captura{img/paso4/Captura_3.png}{Paso 2 de 3: nombres de los switches; se observan Switch1 y parte de Switch2.}{fig:p4-paso2b}
+\captura{img/paso4/Captura_4.png}{Paso 3 de 3: configuración completa de R0 y de la interfaz eth0 de R1.}{fig:p4-paso3a}
+\captura{img/paso4/Captura_5.png}{Paso 3 de 3: configuración de las interfaces de R1 y R2.}{fig:p4-paso3b}
+\captura{img/paso4/Captura_6.png}{Paso 3 de 3: configuración de las interfaces de R3 y R4.}{fig:p4-paso3c}
+\captura{img/paso4/Captura_7.png}{Paso 3 de 3: configuración de PC1, PC2 y PC3.}{fig:p4-paso3d}
 
 \subsection{Prueba de conectividad}
 Una vez iniciado el laboratorio, todos los pings entre routers que comparten
@@ -351,14 +371,14 @@ redes directamente conectadas. R0 anuncia 192.168.0.0/24,
 computadores hacia los routers remotos y construir las rutas necesarias.
 
 Finalmente, se ejecutó \code{show ip bgp summary} en los routers para revisar
-el estado de las sesiones y la cantidad de prefijos recibidos. También se
-consultó \code{show ip route} para verificar las rutas aprendidas. Las
+el estado de las sesiones y la cantidad de prefijos recibidos. Las
 capturas muestran la configuración BGP y el resumen de R0, R1, R2 y R3 en
 la primera imagen, y la configuración y el resumen de R4 en la segunda.
 
-\captura{img/paso4/Captura_1.png}{Configuración BGP y resumen de las sesiones en R0, R1, R2 y R3.}{fig:p5-captura1}
-\captura{img/paso4/Captura_2.png}{Configuración BGP y resumen de las sesiones en R4.}{fig:p5-captura2}
+\captura{img/paso5/Captura_1.png}{Configuración BGP y resumen de las sesiones en R0, R1, R2 y R3.}{fig:p5-captura1}
+\captura{img/paso5/Captura_2.png}{Configuración BGP y resumen de las sesiones en R4.}{fig:p5-captura2}
 
+\FloatBarrier
 \section{Route-maps en R0}
 % Paso 6 (+1.0).
 Para modificar la preferencia de entrada hacia la red de PC1 se trabajó
@@ -385,6 +405,12 @@ end
 write
 \end{salida}
 
+En la primera ejecución de esta configuración apareció el mensaje
+\code{\% Unknown command} por escribir \code{as-patch} en lugar de
+\code{as-path}; el comando fue corregido y ejecutado nuevamente. La
+configuración final corresponde a la que se muestra en la
+figura~\ref{fig:p6-captura1}.
+
 \subsection{Qué hace cada route-map}
 La prefix-list \code{salida} contiene solamente la red
 192.168.0.0/24, donde se encuentra PC1. Por lo tanto, las rutas que no
@@ -406,28 +432,37 @@ clear ip bgp 192.168.2.2 soft out
 \end{salida}
 
 \subsection{Ruta preferida por R2 hacia R0}
-R2 aprende dos caminos hacia 192.168.0.0/24. El anuncio directo desde R0
+R2 aprende varias rutas hacia 192.168.0.0/24. El anuncio directo desde R0
 recibe cuatro repeticiones adicionales de 65000 y queda con el
 AS-PATH \code{65000 65000 65000 65000 65000}, de largo 5. Por otro lado,
 R2 aprende la ruta a través de R1 con el AS-PATH
 \code{65001 65000}, de largo 2. Como BGP prefiere, entre otras
 condiciones, el AS-PATH más corto, R2 selecciona la ruta vía R1, aunque R0
-esté conectado directamente a R2.
+esté conectado directamente a R2. La tabla de R2 también muestra rutas de
+tránsito a través de R3 y R4, ambas de largo 3 (figura~\ref{fig:p6-captura2}).
 
 \begin{table}[ht]
 	\centering
 	\caption{Rutas hacia 192.168.0.0/24 después de aplicar los route-maps.}
 	\label{tab:p6-rutas}
-	\begin{tabular}{llll}
+	\resizebox{\linewidth}{!}{%
+	\begin{tabular}{lllll}
 		\toprule
-		Router & Vía R1 & Vía R2 & Ruta elegida \\
+		Router & Vía & AS-PATH & Largo & ¿Elegida? \\
 		\midrule
-		R1 & 65000 (directa) & Rechazada por su propio ASN & Directa a R0 \\
-		R2 & 65001 65000 (largo 2) & 65000 65000 65000 65000 65000 (largo 5) & Vía R1 \\
-		R3 & 65001 65000 (largo 2) & 65002 65001 65000 (largo 3) & Vía R1 \\
-		R4 & 65001 65000 (largo 2) & 65002 65001 65000 (largo 3) & Vía R1 \\
+		R1 & Directa a R0 & 65000 & 1 & Sí \\
+		R1 & Desde R2 & No aparece en su tabla & -- & No \\
+		R2 & Directa desde R0 & 65000 65000 65000 65000 65000 & 5 & No \\
+		R2 & Vía R1 & 65001 65000 & 2 & Sí \\
+		R2 & Vía R3 & 65003 65001 65000 & 3 & No \\
+		R2 & Vía R4 & 65004 65001 65000 & 3 & No \\
+		R3 & Vía R1 & 65001 65000 & 2 & Sí \\
+		R3 & Vía R2 & 65002 65001 65000 & 3 & No \\
+		R4 & Vía R1 & 65001 65000 & 2 & Sí \\
+		R4 & Vía R2 & 65002 65001 65000 & 3 & No \\
 		\bottomrule
-	\end{tabular}
+	\end{tabular}%
+	}
 \end{table}
 
 R3 y R4 reciben desde R2 su mejor ruta, que es la aprendida desde R1.
@@ -438,6 +473,9 @@ routers externos prefieren la entrada por R1. Esto constituye una forma de
 traffic engineering: se modifica el AS-PATH anunciado para controlar la
 entrada del tráfico sin cambiar la topología física, dejando la vía por R2
 como alternativa si la sesión con R1 falla.
+Las filas correspondientes a R3 y R4 se deducen de la propagación observada
+en la tabla de R2 y de los anuncios posteriores; no se tomó una captura
+independiente de \code{show ip bgp} en esos dos routers.
 
 \captura{img/paso6/Captura_1.png}{Configuración en R0 de la prefix-list, los route-maps y su aplicación a los vecinos BGP.}{fig:p6-captura1}
 \captura{img/paso6/Captura_2.png}{Anuncios de R0 hacia R1 y R2, junto con la tabla BGP usada para comparar los AS-PATH y la ruta elegida.}{fig:p6-captura2}
@@ -447,14 +485,15 @@ como alternativa si la sesión con R1 falla.
 
 \subsection{Situación inicial}
 La sesión BGP entre R1 y R2 ya había sido configurada en el paso 5, pues
-ambos routers comparten la red 192.168.10.0/24. De todas formas, se
-volvieron a ingresar los comandos de vecinos durante la configuración, pero
-eso no cambió las sesiones ni la topología: el cambio efectivo de este paso
-fue aplicar las nuevas prefix-lists de salida. Antes de aplicar los filtros se
-revisó \code{show ip bgp} en R1 y los anuncios de R3 hacia R1. Esto
-permitió observar que R3 anunciaba a sus vecinos rutas que no correspondían
-exclusivamente a su propia red, por lo que podía actuar como router de
-tránsito.
+ambos routers comparten la red 192.168.10.0/24. R1 y R2 no se modificaron
+en este paso: su sesión ya aparece establecida en la figura~\ref{fig:p5-captura1}.
+Antes de aplicar los filtros se revisó \code{show ip bgp} en R1 y los
+anuncios de R3 hacia R1. En la tabla de R1 aparecen rutas hacia
+192.168.2.0/24 vía R3, con AS-PATH \code{65003 65002}, y vía R4, con
+AS-PATH \code{65004 65002}. Además, R3 anuncia a R1 las redes
+192.168.2.0/24 y 192.168.4.0/24, que no son propias de R3
+(figuras~\ref{fig:p7-captura1} y \ref{fig:p7-captura2}). Esto muestra que
+R3 y R4 podían actuar como routers de tránsito para redes ajenas.
 
 \captura{img/paso7/Captura_1.png}{Tabla BGP inicial de R1 antes de aplicar los filtros.}{fig:p7-captura1}
 \captura{img/paso7/Captura_2.png}{Rutas anunciadas inicialmente por R3 hacia sus vecinos.}{fig:p7-captura2}
@@ -496,14 +535,17 @@ se muestra en la figura~\ref{fig:p7-captura3}.
 
 \subsection{Por qué los filtros cumplen lo pedido}
 La entrada \code{solo\_R3} permite 192.168.3.0/24 y bloquea implícitamente
-cualquier otra red. Al aplicarla con \code{prefix-list solo_R3 out} a cada
+cualquier otra red. Al aplicarla con \code{prefix-list solo\_R3 out} a cada
 vecino, R3 solo anuncia la red de PC2. De manera equivalente,
 \code{solo\_R4} hace que R4 solo anuncie 192.168.4.0/24, la red de PC3.
 No se necesitó un route-map porque no se modificó ningún atributo del
 anuncio: únicamente se filtraron prefijos.
 
 Los filtros se aplicaron a los tres vecinos de cada router, incluyendo el
-otro router de borde. Así, R3 y R4 no pueden convertirse en tránsito entre
+otro router de borde. El enunciado exigía filtrar los anuncios hacia R1 y
+R2; aplicar también el filtro hacia el otro router de borde fue una decisión
+adicional para evitar que R3 y R4 pudieran usarse como tránsito entre sí.
+Así, R3 y R4 no pueden convertirse en tránsito entre
 R1 y R2 ni anunciar las rutas de R0 o del otro router de borde. El filtro
 solo afecta los anuncios de salida; R3 y R4 siguen recibiendo las rutas
 desde R1 y R2, lo que permite que aprendan las rutas de retorno. El anuncio
@@ -511,18 +553,38 @@ de 192.168.10.0/24 también queda bloqueado, pero esto no afecta la
 conectividad porque R1 y R2 ya tienen esa red directamente conectada.
 
 \subsection{Sesiones BGP resultantes}
+La idea central es que el tráfico sigue a los anuncios: si R3 solo anuncia
+192.168.3.0/24, R1 y R2 solo tienen una ruta que pase por R3 para llegar a
+esa red. Esto se observa en los anuncios posteriores de R3
+(figura~\ref{fig:p7-captura4}). De forma análoga, el anuncio restringido de
+R4 permite que sus vecinos lo utilicen únicamente como entrada hacia
+192.168.4.0/24, como muestra la figura~\ref{fig:p7-captura5}.
+
 Las sesiones eBGP entre routers permanecen establecidas: R0 mantiene
 sesiones con R1 y R2; R1 y R2 mantienen su sesión entre sí y sesiones con
 R3 y R4; y R3 y R4 mantienen una sesión entre ellos. Las sesiones no se
 eliminan, sino que se restringen los prefijos que R3 y R4 anuncian. R3
 anuncia solamente 192.168.3.0/24 y R4 solamente 192.168.4.0/24.
+La figura~\ref{fig:p7-diagrama} resume estas sesiones y la dirección de los
+anuncios.
 
 \captura{img/paso7/Captura_3.png}{Configuración de las prefix-lists en R3 y R4 y actualización de los anuncios mediante \code{clear ip bgp} \code{soft out}.}{fig:p7-captura3}
 \captura{img/paso7/Captura_4.png}{Prefix-list de R3 y rutas anunciadas por R3 después de aplicar el filtro.}{fig:p7-captura4}
 \captura{img/paso7/Captura_5.png}{Rutas anunciadas por R4 después de aplicar \code{solo\_R4}.}{fig:p7-captura5}
+\noindent Las capturas de anuncios muestran específicamente la salida hacia
+R1; los mismos filtros se aplicaron también a los vecinos R2 y al otro
+router de borde, como indican los comandos anteriores.
 \captura{img/paso7/Captura_6.png}{Tabla BGP de R1 después de actualizar los anuncios.}{fig:p7-captura6}
 \captura{img/paso7/Captura_7.png}{Resumen de las sesiones BGP de R3 después de aplicar el filtro.}{fig:p7-captura7}
 \captura{img/paso7/Captura_8.png}{Resumen de las sesiones BGP de R4 después de aplicar el filtro.}{fig:p7-captura8}
+
+Después del filtrado, la tabla BGP de R1 ya no muestra rutas hacia redes
+ajenas aprendidas a través de R3 o R4 (figura~\ref{fig:p7-captura6}).
+Los resúmenes de R3 y R4 muestran que sus sesiones continúan establecidas,
+con más de una hora de actividad. En particular, cada uno recibe un
+prefijo del otro router de borde (\field{PfxRcd}=1), mientras que recibe
+cinco de R1 y cinco de R2 (figuras~\ref{fig:p7-captura7} y
+\ref{fig:p7-captura8}).
 
 \captura{img/paso7/diagrama.png}{Diagrama de las sesiones BGP y de los prefijos anunciados por cada router.}{fig:p7-diagrama}
 
@@ -554,6 +616,7 @@ alcanzó 192.168.3.11. Por lo tanto, la conectividad entre todos los
 computadores no quedó completamente resuelta en esta etapa. Las capturas de
 las pruebas desde PC1 y PC2, y desde PC3, se incluyen en las
 figuras~\ref{fig:p7-captura9} y \ref{fig:p7-captura10}.
+La causa de los dos fallos se analiza con más detalle en la sección 8.
 
 \captura{img/paso7/Captura_9.png}{Pruebas de conectividad desde PC1 y PC2 después de aplicar los filtros.}{fig:p7-captura9}
 \captura{img/paso7/Captura_10.png}{Pruebas de conectividad desde PC3 después de aplicar los filtros.}{fig:p7-captura10}
@@ -570,6 +633,11 @@ router bgp 65000
 end
 \end{salida}
 
+Después de desactivar la sesión se actualizaron las rutas con \code{clear
+ip bgp 192.168.1.2 soft in} y \code{clear ip bgp 192.168.1.2 soft out}.
+Estos comandos no aparecen en una captura independiente, pero fueron
+ejecutados antes de repetir las pruebas.
+
 Este comando no apaga R1 ni desconecta sus interfaces. Solamente desactiva
 el intercambio BGP entre R0 y R1. Como consecuencia, R1 deja de recibir
 anuncios directamente desde R0 y retira las rutas aprendidas por esa
@@ -582,22 +650,44 @@ La comparación con el paso anterior también muestra el efecto del
 \field{AS-PATH prepend}: antes de apagar la sesión, la ruta anunciada
 directamente a R2 parecía menos atractiva que la aprendida por R1. Al
 desactivar R0--R1, ese camino preferido deja de estar disponible y los
-routers deben seleccionar las rutas restantes. Sin embargo, esto no
-garantizó conectividad completa en las pruebas realizadas. Después del
-\code{shutdown}, cuatro de los seis pings funcionaron:
-PC1 alcanzó a PC2, PC2 alcanzó a PC1 y PC3, y PC3 alcanzó a PC2. Los dos
-casos que continuaron fallando fueron PC1 hacia 192.168.4.11 y PC3 hacia
-192.168.0.11.
+routers deben seleccionar las rutas restantes. En este caso, el cambio
+permitió recuperar la conectividad completa: después del
+\code{shutdown}, los seis pings entre los computadores funcionaron.
+También funcionaron los dos casos que habían fallado en el paso anterior:
+PC1 hacia 192.168.4.11 y PC3 hacia 192.168.0.11.
 
-Esto indica que el \code{shutdown} sí modificó la disponibilidad de un
-camino, pero no resolvió todos los problemas de enrutamiento. Para que un
-\code{ping} funcione se necesita tanto una ruta desde el origen hasta la
-red destino como una ruta de retorno para las respuestas. Las capturas
-muestran el comando aplicado y las pruebas de conectividad posteriores.
+La causa más consistente con los resultados es el filtro de ruta inversa
+\code{rp\_filter}, explicado junto a la figura~\ref{fig:p2-un-sentido}. Antes
+del \code{shutdown}, el prepend hacía que R2, R3 y R4 prefirieran volver a
+la red 192.168.0.0/24 a través de R1, por lo que el tráfico de retorno
+entraba a R0 por su interfaz eth1. Para 192.168.4.0/24, R0 tenía rutas de
+igual longitud a través de R1 y R2, y los resultados sugieren que escogía
+la vía por R2. Así, un paquete de PC1 a PC3 podía llegar a R2 por eth0,
+mientras R2 tenía su ruta de retorno hacia 192.168.0.0/24 por R1, en eth1.
+Con \code{rp\_filter} activo, esa asimetría podía hacer que R2 descartara
+el paquete.
+
+El caso PC3--PC1 es análogo en R0: el paquete llegaba desde R1 por eth1,
+pero la ruta de R0 hacia 192.168.4.0/24 parecía estar por R2, a través de
+eth2. En cambio, para 192.168.3.0/24 R0 escogía la vía por R1, por lo que
+la ida y la vuelta coincidían y PC1--PC2 funcionaba. Esta explicación es
+una hipótesis basada en las capturas y en el comportamiento de
+\code{rp\_filter}; no se afirmó como una observación directa de
+\code{show ip bgp} en R0.
+
+Al apagar R0--R1, R0 quedó con R2 como camino disponible hacia esas redes.
+La ida y la vuelta pasaron a coincidir y los seis pings funcionaron. Los
+\field{TTL} observados, 61 para caminos de tres routers y 62 para caminos
+de dos, son consistentes con esos recorridos alternativos. Una de las
+capturas comienza con un ping de PC3 que ya estaba ejecutándose desde el
+paso 7 (\code{289 packets transmitted, 27 received, 90\% packet loss});
+los paquetes recibidos después del \code{shutdown} corresponden a la
+recuperación de la ruta, no a un fallo persistente posterior
+(figuras~\ref{fig:p8-captura2} y \ref{fig:p8-captura3}).
 
 \captura{img/paso8/Captura_1.png}{Comando \code{neighbor 192.168.1.2 shutdown} aplicado en R0 para desactivar la sesión con R1.}{fig:p8-captura1}
 \captura{img/paso8/Captura_2.png}{Pruebas de ping posteriores al apagado de la sesión R0--R1.}{fig:p8-captura2}
-\captura{img/paso8/Captura_3.png}{Pruebas restantes de ping posteriores al apagado de la sesión R0--R1.}{fig:p8-captura3}
+\captura{img/paso8/Captura_3.png}{Pruebas restantes de ping posteriores al apagado de la sesión R0--R1; el ping que venía ejecutándose se recupera tras actualizar las rutas.}{fig:p8-captura3}
 
 \section{Declaración de uso de IA}
 En la elaboración de este informe se utilizó un modelo de inteligencia artificial, Claude (Opus 5.5), para editar el template de LaTeX, organizar secciones y transcribir el enunciado.
