@@ -228,7 +228,26 @@ Configurar un router fue interesante porque la consola de Quagga imita la de los
 
 \section{Configuración de la red}
 % Paso 4 (+0.8).
-El laboratorio tiene 5 routers, 3 computadores y \pendiente{número} switches virtuales. \pendiente{explicar cuántos switches se usaron y por qué: Einar exige un switch para conectar dos equipos.}
+Se creó en Einar el laboratorio \code{Act7\_Enredados}, compuesto por 5 routers,
+3 computadores virtuales y 6 switches. Todos los dispositivos fueron nombrados
+con el sufijo \code{\_Enredados}, por ejemplo,
+\code{R0\_Enredados}, \code{PC1\_Enredados} y \code{Switch1\_Enredados}.
+
+La red de la actividad utiliza seis redes IP: 192.168.0.0/24,
+192.168.1.0/24, 192.168.2.0/24, 192.168.3.0/24, 192.168.4.0/24 y
+192.168.10.0/24. Por esta razón se configuró un switch por cada red, ya que
+Einar utiliza switches para conectar los equipos que pertenecen a una misma
+red y no permite conectar dos equipos directamente. R0 es el único router
+con tres interfaces, porque participa en las redes 192.168.0.0/24,
+192.168.1.0/24 y 192.168.2.0/24; los demás routers tienen dos interfaces.
+Cada computador tiene una interfaz.
+
+En las redes entre routers se asignaron direcciones consecutivas. En la red
+192.168.10.0/24 se utilizaron las direcciones .1, .2, .3 y .4 para R1, R2,
+R3 y R4, respectivamente. Los computadores usan la dirección .11 de su
+red, y su gateway por defecto es la interfaz del router al que están
+conectados. Todas las interfaces tienen máscara /24, ancho de banda de
+100 Mbps y retardo de 0 ms.
 
 \begin{table}[ht]
 	\centering
@@ -238,14 +257,47 @@ El laboratorio tiene 5 routers, 3 computadores y \pendiente{número} switches vi
 		\toprule
 		Equipo & Interfaz & Conectada a & IP & Red & Default gateway \\
 		\midrule
-		\pendiente{completar} & & & & & \\
+		\code{R0\_Enredados} & eth0 & \code{Switch1\_Enredados} & 192.168.0.1/24 & 192.168.0.0/24 & -- \\
+		& eth1 & \code{Switch2\_Enredados} & 192.168.1.1/24 & 192.168.1.0/24 & -- \\
+		& eth2 & \code{Switch3\_Enredados} & 192.168.2.1/24 & 192.168.2.0/24 & -- \\
+		\code{R1\_Enredados} & eth0 & \code{Switch2\_Enredados} & 192.168.1.2/24 & 192.168.1.0/24 & -- \\
+		& eth1 & \code{Switch4\_Enredados} & 192.168.10.1/24 & 192.168.10.0/24 & -- \\
+		\code{R2\_Enredados} & eth0 & \code{Switch3\_Enredados} & 192.168.2.2/24 & 192.168.2.0/24 & -- \\
+		& eth1 & \code{Switch4\_Enredados} & 192.168.10.2/24 & 192.168.10.0/24 & -- \\
+		\code{R3\_Enredados} & eth0 & \code{Switch4\_Enredados} & 192.168.10.3/24 & 192.168.10.0/24 & -- \\
+		& eth1 & \code{Switch5\_Enredados} & 192.168.3.1/24 & 192.168.3.0/24 & -- \\
+		\code{R4\_Enredados} & eth0 & \code{Switch4\_Enredados} & 192.168.10.4/24 & 192.168.10.0/24 & -- \\
+		& eth1 & \code{Switch6\_Enredados} & 192.168.4.1/24 & 192.168.4.0/24 & -- \\
+		\code{PC1\_Enredados} & eth0 & \code{Switch1\_Enredados} & 192.168.0.11/24 & 192.168.0.0/24 & 192.168.0.1 \\
+		\code{PC2\_Enredados} & eth0 & \code{Switch5\_Enredados} & 192.168.3.11/24 & 192.168.3.0/24 & 192.168.3.1 \\
+		\code{PC3\_Enredados} & eth0 & \code{Switch6\_Enredados} & 192.168.4.11/24 & 192.168.4.0/24 & 192.168.4.1 \\
 		\bottomrule
 	\end{tabular}
 \end{table}
 
-\captura{img/paso4/paso1.png}{Paso 1 de 3 de la creación del laboratorio.}{fig:p4-paso1}
-\captura{img/paso4/paso2.png}{Paso 2 de 3: interfaces de cada equipo.}{fig:p4-paso2}
-\captura{img/paso4/paso3.png}{Paso 3 de 3: conexiones e IP de cada interfaz.}{fig:p4-paso3}
+\captura{img/paso2/captura_1.png}{Paso 1 de 3: creación del laboratorio \code{Act7\_Enredados}, con 5 routers, 3 computadores y 6 switches.}{fig:p4-paso1}
+\captura{img/paso2/captura_2.png}{Paso 2 de 3: nombres e interfaces de los routers y computadores.}{fig:p4-paso2a}
+\captura{img/paso2/captura_3.png}{Paso 2 de 3: nombres de los switches y configuración restante de los dispositivos.}{fig:p4-paso2b}
+\captura{img/paso2/captura_4.png}{Paso 3 de 3: interfaces y conexiones de R0, R1 y R2.}{fig:p4-paso3a}
+\captura{img/paso2/captura_5.png}{Paso 3 de 3: interfaces y conexiones de R3 y R4.}{fig:p4-paso3b}
+\captura{img/paso2/captura_6.png}{Paso 3 de 3: configuración de PC1 y PC2.}{fig:p4-paso3c}
+\captura{img/paso2/captura_7.png}{Paso 3 de 3: configuración de PC3 y finalización del laboratorio.}{fig:p4-paso3d}
+
+\subsection{Prueba de conectividad}
+Una vez iniciado el laboratorio, todos los pings entre routers que comparten
+una red funcionaron correctamente. También funcionaron los pings entre cada
+router y el computador conectado directamente a él: R0 alcanzó a PC1, R3
+alcanzó a PC2 y R4 alcanzó a PC3. Por ejemplo, R0 alcanzó a R1 mediante
+192.168.1.2 y a R2 mediante 192.168.2.2; en la red 192.168.10.0/24,
+R1 y R2 alcanzaron a R3 y R4 usando sus respectivas direcciones .3 y .4.
+
+Como era esperable antes de configurar BGP, los únicos pings que fallaron
+fueron los de PC1 hacia PC2 (192.168.3.11) y PC3 (192.168.4.11). PC1 sí
+alcanzó a su gateway, 192.168.0.1. El fallo se debe a que, en esta etapa,
+los routers solo conocen sus redes directamente conectadas: R0 todavía no
+tiene rutas hacia 192.168.3.0/24 ni 192.168.4.0/24, y tampoco existen rutas
+de retorno hacia 192.168.0.0/24 en los routers correspondientes. Estas rutas
+se aprenderán posteriormente mediante BGP.
 
 \section{BGP inicial}
 % Paso 5 (+0.7).
