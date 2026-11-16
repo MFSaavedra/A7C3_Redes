@@ -1,0 +1,286 @@
+% Template:     Informe LaTeX
+% Documento:    Archivo principal
+% Versión:      8.4.4 (02/12/2025)
+% Codificación: UTF-8
+%
+% Autor: Pablo Pizarro R.
+%        pablo@ppizarror.com
+%
+% Manual template: [https://latex.ppizarror.com/informe]
+% Licencia MIT:    [https://opensource.org/licenses/MIT]
+
+% CREACIÓN DEL DOCUMENTO
+\documentclass[
+	spanish, % Idioma: spanish, english, etc.
+	letterpaper, oneside
+]{article}
+
+% INFORMACIÓN DEL DOCUMENTO
+\def\documenttitle {Actividad 7}
+\def\documentsubtitle {Simulando routers BGP}
+\def\documentsubject {Ruteo}
+
+\def\documentauthor {María Moya G., M. Fernando Saavedra}
+\def\coursename {Redes}
+\def\coursecode {CC4303}
+
+\def\universityname {Universidad de Chile}
+\def\universityfaculty {Facultad de Ciencias Físicas y Matemáticas}
+\def\universitydepartment {Departamento de Ciencias de la Computación}
+\def\universitydepartmentimage {departamentos/dcc}
+\def\universitydepartmentimagecfg {height=1.57cm}
+\def\universitylocation {Santiago de Chile}
+
+% INTEGRANTES, PROFESORES Y FECHAS
+\def\authortable {
+	\begin{tabular}{ll}
+		Integrantes:
+		& \begin{tabular}[t]{l}
+			María Moya G. \\
+			M. Fernando Saavedra
+		\end{tabular} \\
+		Profesor:
+		& \begin{tabular}[t]{l}
+			Ivana Bachmann
+		\end{tabular} \\
+		Auxiliar:
+		& \begin{tabular}[t]{l}
+			Julián Ferreira
+		\end{tabular} \\
+		Ayudantes:
+		& \begin{tabular}[t]{l}
+			Diego García G. \\
+			Valeria Serrano
+		\end{tabular} \\
+		& \\
+		\multicolumn{2}{l}{Fecha de realización: \today} \\
+		\multicolumn{2}{l}{Fecha de entrega: \pendiente{fecha}} \\
+		\multicolumn{2}{l}{\universitylocation}
+	\end{tabular}
+}
+
+% MARCAS DE TRABAJO PENDIENTE
+% \pendiente marca en rojo lo que falta completar. Se define antes del template
+% porque \authortable la usa. Antes de entregar no debe quedar ninguna:
+%   grep -n 'pendiente{' main.tex
+\newcommand{\pendiente}[1]{\textcolor{red}{[Pendiente: #1]}}
+
+% IMPORTACIÓN DEL TEMPLATE
+\input{template}
+
+% CONVENCIÓN TIPOGRÁFICA
+% El cuerpo del informe se compone en una sola fuente: no se usa monoespaciado,
+% negrita ni cursiva para destacar nombres de archivo, comandos ni equipos.
+% La tipografía solo cambia en los bloques de salida, que reproducen salidas y
+% configuraciones literales de los routers. Las macros se conservan como marcas
+% semánticas y no producen ningún cambio visual. \code solo permite cortar la
+% línea después de cada guion bajo, porque los nombres largos, como
+% R1_nombre_del_grupo, no se pueden dividir en sílabas y se salen del margen.
+\newcommand{\codeunderscore}{\textunderscore\allowbreak}
+\newcommand{\code}[1]{{\let\_\codeunderscore#1}}     % comandos, archivos y nombres de equipos (show ip bgp, R1_grupo)
+\newcommand{\field}[1]{#1}    % atributos BGP y campos de las tablas (AS-path, next hop)
+
+% BLOQUES DE SALIDA
+% Las salidas de Quagga y las configuraciones se componen con listings, que corta
+% las líneas largas en un espacio y marca la continuación con una flecha. Aparte
+% de eso equivalen a un verbatim.
+\lstdefinestyle{salida}{
+	aboveskip=0.6em,
+	basicstyle=\ttfamily\footnotesize,
+	belowskip=0.6em,
+	breakatwhitespace=true,
+	breakindent=1.5em,
+	breaklines=true,
+	columns=fixed,
+	frame=none,
+	keepspaces=true,
+	numbers=none,
+	postbreak=\mbox{\textcolor{gray}{$\hookrightarrow$}\space},
+	showstringspaces=false
+}
+% Con columns=fixed cada carácter ocupa una columna de ancho basewidth, que se
+% mide al iniciar cada bloque como el ancho de un dígito en la fuente del bloque.
+% Así las columnas de show ip bgp y show ip route quedan alineadas.
+\newlength{\salidachar}
+\lstnewenvironment{salida}[1][]{\settowidth{\salidachar}{\ttfamily\footnotesize 0}\lstset{style=salida,basewidth=\salidachar,#1}}{}
+
+% CAPTURAS DE PANTALLA
+% \captura{archivo}{leyenda}{etiqueta} inserta una captura de img/ a todo el
+% ancho. Si el archivo todavía no existe, deja en su lugar un recuadro con su
+% nombre, para que el informe compile mientras faltan capturas. Las capturas de
+% la máquina virtual se toman con: sh einar/einar.sh captura <carpeta> <nombre>
+\newcommand{\captura}[3]{%
+	\begin{figure}[ht]
+		\centering
+		\IfFileExists{#1}{%
+			\includegraphics[width=\linewidth]{#1}%
+		}{%
+			\fbox{\parbox[c][3cm][c]{0.9\linewidth}{\centering\textcolor{red}{Falta la captura \detokenize{#1}}}}%
+		}
+		\caption{#2}
+		\label{#3}
+	\end{figure}%
+}
+
+% INICIO DE PÁGINAS
+\begin{document}
+
+% PORTADA
+\templatePortrait
+
+% CONFIGURACIÓN DE PÁGINA Y ENCABEZADOS
+\templatePagecfg
+
+% TABLA DE CONTENIDOS - ÍNDICE
+\templateIndex
+
+% CONFIGURACIONES FINALES
+\templateFinalcfg
+
+% ======================= INICIO DEL DOCUMENTO =======================
+
+\section{Grupo y convenciones}
+% Paso 1.
+El grupo se llama \pendiente{nombre del grupo}. Todos los equipos virtuales llevan ese nombre como sufijo: el router R0 se llama \code{R0\_}\pendiente{grupo}, el computador PC1 se llama \code{PC1\_}\pendiente{grupo}, y así con el resto.
+
+Einar se ejecutó como máquina virtual en VirtualBox, a partir de la imagen \code{einar1.0.iso} entregada por el curso: Linux 32 bits, sin disco virtual. Los routers de Einar usan Quagga 0.99.3, cuya consola sigue la sintaxis de Cisco.
+
+\section{Ejemplo: configurando rutas con Einar}
+% Paso 2 (+1.0).
+
+\subsection{Observaciones}
+\pendiente{desafíos encontrados y aspectos interesantes del ejemplo. Preguntas guía: ¿qué costó entender?, ¿qué partes ayudaron a entender las tablas de rutas?, ¿es interesante (o no) configurar un router y por qué?}
+
+\subsection{Capturas}
+\captura{img/paso2/red.png}{Laboratorio del ejemplo en funcionamiento.}{fig:p2-red}
+\captura{img/paso2/rutas.png}{Adición de nuevas rutas.}{fig:p2-rutas}
+\captura{img/paso2/ping_antes.png}{Ping de PC1 a PC2 antes de agregar las rutas.}{fig:p2-ping-antes}
+\captura{img/paso2/ping_despues.png}{Ping de PC1 a PC2 después de agregar las rutas.}{fig:p2-ping-despues}
+
+\section{Ejemplo: BGP con Einar}
+% Paso 3 (+1.0).
+
+\subsection{Observaciones}
+\pendiente{desafíos encontrados y aspectos interesantes del ejemplo. Preguntas guía: ¿qué costó entender?, ¿qué partes ayudaron a entender BGP y por qué?, ¿es interesante (o no) configurar un router BGP y por qué?}
+
+\subsection{Capturas}
+\captura{img/paso3/red.png}{Laboratorio del ejemplo BGP en funcionamiento.}{fig:p3-red}
+\captura{img/paso3/bgp.png}{Configuración de los routers BGP.}{fig:p3-bgp}
+\captura{img/paso3/filtros.png}{Cambios producidos por los filtros.}{fig:p3-filtros}
+
+\section{Configuración de la red}
+% Paso 4 (+0.8).
+El laboratorio tiene 5 routers, 3 computadores y \pendiente{número} switches virtuales. \pendiente{explicar cuántos switches se usaron y por qué: Einar exige un switch para conectar dos equipos.}
+
+\begin{table}[ht]
+	\centering
+	\caption{Interfaces de cada equipo.}
+	\label{tab:interfaces}
+	\begin{tabular}{llllll}
+		\toprule
+		Equipo & Interfaz & Conectada a & IP & Red & Default gateway \\
+		\midrule
+		\pendiente{completar} & & & & & \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\captura{img/paso4/paso1.png}{Paso 1 de 3 de la creación del laboratorio.}{fig:p4-paso1}
+\captura{img/paso4/paso2.png}{Paso 2 de 3: interfaces de cada equipo.}{fig:p4-paso2}
+\captura{img/paso4/paso3.png}{Paso 3 de 3: conexiones e IP de cada interfaz.}{fig:p4-paso3}
+
+\section{BGP inicial}
+% Paso 5 (+0.7).
+Cada router usa el ASN 65000 + N, donde N es su número, y tiene como vecinos a los routers con los que comparte una red. \pendiente{indicar qué sesiones se configuraron; ver la nota del paso 5 en INSTRUCCIONES.md sobre la sesión R1--R2.}
+
+\begin{table}[ht]
+	\centering
+	\caption{Sesiones BGP configuradas.}
+	\label{tab:sesiones}
+	\begin{tabular}{lll}
+		\toprule
+		Router (ASN) & Vecino (ASN) & IP del vecino \\
+		\midrule
+		\pendiente{completar} & & \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+
+\captura{img/paso5/R0.png}{Configuración BGP de R0.}{fig:p5-r0}
+\captura{img/paso5/R1.png}{Configuración BGP de R1.}{fig:p5-r1}
+\captura{img/paso5/R2.png}{Configuración BGP de R2.}{fig:p5-r2}
+\captura{img/paso5/R3.png}{Configuración BGP de R3.}{fig:p5-r3}
+\captura{img/paso5/R4.png}{Configuración BGP de R4.}{fig:p5-r4}
+
+\section{Route-maps en R0}
+% Paso 6 (+1.0).
+\begin{salida}
+ip prefix-list salida seq 10 permit 192.168.0.0/24
+route-map salida_R1 permit 10
+   match ip address prefix-list salida
+route-map salida_R2 permit 10
+   match ip address prefix-list salida
+   set as-path prepend 65000 65000 65000 65000
+\end{salida}
+
+\subsection{Qué hace cada route-map}
+\pendiente{explicar salida\_R1 y salida\_R2.}
+
+\subsection{Ruta preferida por R2 hacia R0}
+\pendiente{qué ruta prefiere R2 para llegar a R0 y por qué, apoyado en show ip bgp.}
+
+\captura{img/paso6/config.png}{Configuración de los route-maps en R0.}{fig:p6-config}
+\captura{img/paso6/bgp_R2.png}{Tabla BGP de R2 tras aplicar los route-maps.}{fig:p6-bgp-r2}
+
+\section{Sesión R1--R2 y filtros en R3 y R4}
+% Paso 7 (+1.5 junto con el paso 8).
+
+\subsection{Comandos}
+\pendiente{comandos agregados a R1, R2, R3 y R4.}
+
+\subsection{Por qué los filtros cumplen lo pedido}
+\pendiente{explicación.}
+
+\subsection{Sesiones BGP resultantes}
+\pendiente{diagrama de las sesiones BGP y de lo que se anuncia por cada una (img/bgp\_paso7.dot, generado con sh img/diagramas.sh).}
+
+\captura{img/paso7/R3.png}{Filtros en R3.}{fig:p7-r3}
+\captura{img/paso7/R4.png}{Filtros en R4.}{fig:p7-r4}
+
+\subsection{Test de ping}
+\begin{table}[ht]
+	\centering
+	\caption{Ping entre todos los pares de computadores tras el paso 7.}
+	\label{tab:ping-paso7}
+	\begin{tabular}{llc}
+		\toprule
+		Origen & Destino & ¿Responde? \\
+		\midrule
+		PC1 & PC2 & \pendiente{} \\
+		PC1 & PC3 & \pendiente{} \\
+		PC2 & PC1 & \pendiente{} \\
+		PC2 & PC3 & \pendiente{} \\
+		PC3 & PC1 & \pendiente{} \\
+		PC3 & PC2 & \pendiente{} \\
+		\bottomrule
+	\end{tabular}
+\end{table}
+\pendiente{observaciones sobre los ping que fallan, si alguno falla.}
+
+\section{Sesión R0--R1 apagada}
+% Paso 8 (+1.5 junto con el paso 7).
+\begin{salida}
+router bgp 65000
+   neighbor 192.168.1.Z shutdown
+\end{salida}
+\pendiente{reemplazar Z por la IP de R1; verificar que todos los ping funcionan; explicar por qué, en comparación con el paso 7.}
+
+\captura{img/paso8/ping.png}{Ping entre los computadores con la sesión R0--R1 apagada.}{fig:p8-ping}
+
+\section{Declaración de uso de IA}
+En la elaboración de este informe se utilizó un modelo de inteligencia artificial, Claude (Opus 5.5), para transcribir y ordenar el enunciado, preparar la estructura del informe sobre el template de LaTeX y escribir los scripts que crean la máquina virtual de Einar y toman sus capturas de pantalla.
+
+\pendiente{completar con el uso real durante la actividad, como en las actividades anteriores.}
+
+% FIN DEL DOCUMENTO
+\end{document}
