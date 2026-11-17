@@ -146,18 +146,16 @@
 
 \section{Grupo y convenciones}
 % Paso 1.
-El grupo se llama Enredados. Todos los equipos virtuales llevan ese nombre como sufijo: el router R0 se llama \code{R0\_Enredados}, el computador PC1 se llama \code{PC1\_Enredados}, y así con el resto.
+El grupo se llama Enredados, y todos los equipos virtuales llevan ese sufijo: \code{R0\_Enredados}, \code{PC1\_Enredados}, etc. Einar se ejecutó en VirtualBox desde la imagen \code{einar1.0.iso} del curso. Sus routers usan Quagga 0.99.3, cuya consola sigue la sintaxis de Cisco.
 
 En una de las pantallas de configuración, R1 aparece temporalmente como
 \code{R1\_\_Enredados}, con dos guiones bajos. Se trata de un error
 tipográfico al crear el laboratorio; en la configuración y en el resto del
 informe el nombre utilizado es \code{R1\_Enredados}.
 
-Einar se ejecutó como máquina virtual en VirtualBox, a partir de la imagen \code{einar1.0.iso} entregada por el curso: Linux 32 bits, sin disco virtual. Los routers de Einar usan Quagga 0.99.3, cuya consola sigue la sintaxis de Cisco.
-
 \section{Ejemplo: configurando rutas con Einar}
 % Paso 2 (+1.0).
-Se replicó el ejemplo en el laboratorio \code{ejemplo\_1\_Enredados}, con 2 routers de 2 interfaces, 2 computadores de una interfaz y 3 switches. Einar no conecta dos equipos directamente, así que cada red IP necesita su propio switch: uno para 192.168.1.0/24, otro para 192.168.10.0/24 y otro para 192.168.2.0/24. La tabla~\ref{tab:p2-interfaces} resume las interfaces, que son las del ejemplo con los nombres del grupo.
+El ejemplo se replicó en el laboratorio \code{ejemplo\_1\_Enredados} (tabla~\ref{tab:p2-interfaces}). Einar no conecta dos equipos directamente, así que cada una de las 3 redes IP necesita su propio switch.
 
 \begin{table}[ht]
 	\centering
@@ -178,60 +176,88 @@ Se replicó el ejemplo en el laboratorio \code{ejemplo\_1\_Enredados}, con 2 rou
 \end{table}
 
 \subsection{Ejecución}
-Al iniciar el laboratorio, Einar abre una consola por equipo (figura~\ref{fig:p2-red}). Las de los routers entran directamente a Quagga y las de los computadores a una consola de Linux.
+Las pruebas 1 a 3, en que cada equipo hace ping a sus vecinos directos, funcionan (figura~\ref{fig:p2-vecinos}). La prueba 4, de PC1 a PC2, pierde todos los paquetes: R1 y R2 solo conocen sus redes directamente conectadas (rutas C), y cada computador, su red y su salida default (figura~\ref{fig:p2-ping-antes}).
 
-\captura{img/paso2/red.png}{Laboratorio \code{ejemplo\_1\_Enredados} recién iniciado, con una consola por equipo.}{fig:p2-red}
+\captura{img/paso2/vecinos.png}{Pruebas 1 a 3: cada equipo alcanza a sus vecinos directos.}{fig:p2-vecinos}
 
-Las pruebas 1 a 3 del ejemplo, en que cada equipo hace ping a los equipos de sus propias redes, funcionan sin pérdidas (figura~\ref{fig:p2-vecinos}). En los computadores se usó \code{ping -c 3}, que se detiene tras 3 paquetes; el ping de Quagga no tiene esa opción y se detuvo con Ctrl+C, como en el ejemplo.
+\captura{img/paso2/ping_antes.png}{Antes de agregar rutas, el ping de PC1 a PC2 falla (abajo a la derecha) y los routers solo tienen rutas a sus redes conectadas.}{fig:p2-ping-antes}
 
-\captura{img/paso2/vecinos.png}{Pruebas 1 a 3: PC1 alcanza a R1 (abajo a la derecha), R1 a PC1 y a R2 (abajo a la izquierda), y R2 a R1 y a PC2 (arriba a la derecha).}{fig:p2-vecinos}
-
-La prueba 4, el ping de PC1 a PC2, pierde todos los paquetes (figura~\ref{fig:p2-ping-antes}). Las tablas de rutas explican por qué. Según \code{show ip route}, R1 y R2 solo conocen sus redes directamente conectadas, marcadas con C, así que R1 no sabe llegar a 192.168.2.0/24 ni R2 a 192.168.1.0/24. Según \code{netstat -rn}, cada computador conoce su propia red y su salida default (destino 0.0.0.0), que es su router.
-
-\captura{img/paso2/ping_antes.png}{Antes de agregar rutas: el ping de PC1 a PC2 pierde todos los paquetes (abajo a la derecha). R1 y R2 solo tienen rutas a sus redes directamente conectadas, y cada computador conoce su red y su salida default.}{fig:p2-ping-antes}
-
-Para unir las dos redes, cada router recibió una ruta estática hacia la red del otro lado, cuyo siguiente salto es la IP del otro router en 192.168.10.0/24. Las rutas se agregan en el modo de configuración, y la configuración se guarda con \code{write} (figura~\ref{fig:p2-rutas}):
+Luego se agregó en cada router una ruta estática hacia la red remota, con el otro router como siguiente salto, y se guardó la configuración con \code{write} (figura~\ref{fig:p2-rutas}):
 \begin{salida}
-R1_Enredados# configure terminal
 R1_Enredados(config)# ip route 192.168.2.0/24 192.168.10.2
-R1_Enredados(config)# exit
-R1_Enredados# write
-
-R2_Enredados# configure terminal
 R2_Enredados(config)# ip route 192.168.1.0/24 192.168.10.1
-R2_Enredados(config)# exit
-R2_Enredados# write
 \end{salida}
+Con ambas rutas (S, estáticas), el ping de PC1 a PC2 funciona (figura~\ref{fig:p2-ping-despues}). Las respuestas llegan con \field{TTL} 62, porque cada uno de los dos routers descuenta 1 de los 64 iniciales, y \code{traceroute} muestra ese camino.
 
-\captura{img/paso2/rutas.png}{Rutas estáticas agregadas en R1 (izquierda) y R2 (derecha), con las tablas de rutas resultantes.}{fig:p2-rutas}
+\captura{img/paso2/rutas.png}{Rutas estáticas en R1 (izquierda) y R2 (derecha), con sus tablas de rutas.}{fig:p2-rutas}
 
-Con ambas rutas, \code{show ip route} muestra en cada router una ruta S (estática) hacia la red remota, y el ping de PC1 a PC2 responde sin pérdidas (figura~\ref{fig:p2-ping-despues}). Las respuestas llegan con \field{TTL} 62: PC2 las envía con 64 y cada uno de los dos routers lo descuenta en 1. \code{traceroute} confirma ese camino: 192.168.1.1 (R1), 192.168.10.2 (R2) y 192.168.2.21 (PC2).
-
-\captura[0.62\linewidth]{img/paso2/ping_despues.png}{Después de agregar las rutas, el ping de PC1 a PC2 responde, y \code{traceroute} muestra el camino por R1 y R2.}{fig:p2-ping-despues}
+\captura[0.62\linewidth]{img/paso2/ping_despues.png}{Con las rutas, el ping de PC1 a PC2 funciona y \code{traceroute} pasa por R1 y R2.}{fig:p2-ping-despues}
 
 \subsection{Observaciones}
-Lo que más costó al ejecutar el ejemplo no fueron las rutas, sino el entorno de Einar. Su distribución de teclado por omisión es sueca: al escribir una IP, la barra aparece como guion, hasta cambiar la distribución a US con el enlace Keyboard layout de la página de inicio. En el último paso del asistente que crea el laboratorio, cada interfaz parte conectada a Physical eth0, la tarjeta de red de la máquina, y hay que cambiarla al switch que corresponde. Y como Einar no conecta dos equipos directamente, hay que contar las redes IP para saber cuántos switches crear, aunque una red tenga solo dos equipos.
+Lo que más costó fue el entorno de Einar, más que las rutas: el teclado parte en distribución sueca (la barra de las IP sale como guion), el asistente conecta cada interfaz a Physical eth0 hasta que se elige su switch, y cada red IP necesita un switch aunque tenga solo dos equipos.
 
-Lo que más ayudó a entender las tablas de rutas fue compararlas antes y después de agregar las rutas. Mientras un router solo conoce sus redes directamente conectadas, un paquete hacia una red remota no tiene por dónde seguir, y basta una línea \code{ip route} en cada router para que su tabla tenga una ruta S hacia la otra red.
+Lo que más ayudó a entender las tablas de rutas fue compararlas antes y después, y una prueba adicional: con la ruta solo en R1, las solicitudes de PC1 llegaban a R2 pero no a PC2 (figura~\ref{fig:p2-un-sentido}). Einar activa el filtro de ruta inversa (\code{rp\_filter}), así que R2 descartaba los paquetes de una red hacia la que no tenía ruta de vuelta; su contador \code{in\_martian\_src} marcaba 6, uno por solicitud (figura~\ref{fig:p2-martian}). La ruta hace falta en ambos sentidos: sin ella no vuelven las respuestas, y con este filtro ni siquiera pasan las solicitudes.
 
-También ayudó una prueba que no está en el ejemplo: con la ruta agregada solo en R1, el ping de PC1 a PC2 seguía fallando, y no solo por las respuestas. Repitiendo el ping con una captura de \code{tcpdump} en R2 y en PC2, las solicitudes llegaban a R2 pero no a PC2 (figura~\ref{fig:p2-un-sentido}). Einar activa en todos los equipos el filtro de ruta inversa (\code{rp\_filter}), que descarta los paquetes cuyo origen no se podría alcanzar de vuelta por la interfaz en que llegaron, y R2 no tenía ninguna ruta hacia 192.168.1.0/24. El contador \code{in\_martian\_src} de R2, en \code{/proc/net/stat/rt\_cache}, marcaba 6: uno por cada solicitud descartada en las dos repeticiones. La ruta hace falta en ambos sentidos: sin la de vuelta no regresan las respuestas, y con este filtro ni siquiera avanzan las solicitudes.
-La lectura del contador se muestra en la figura~\ref{fig:p2-martian}.
+\captura{img/paso2/un_sentido.png}{Con la ruta solo en R1, las solicitudes de PC1 llegan a R2 (izquierda) pero no a PC2 (derecha), en dos repeticiones del mismo ping.}{fig:p2-un-sentido}
 
-\captura{img/paso2/un_sentido.png}{Con la ruta agregada solo en R1, las solicitudes de PC1 llegan a la interfaz eth0 de R2 (izquierda), pero no a PC2 (derecha). Son dos repeticiones del mismo ping, con una captura en cada equipo.}{fig:p2-un-sentido}
-\captura{img/paso2/martian_R2.png}{Contador \code{in\_martian\_src} de R2 después de descartar las solicitudes por el filtro \code{rp\_filter}.}{fig:p2-martian}
+\captura[0.62\linewidth]{img/paso2/martian_R2.png}{Contador \code{in\_martian\_src} de R2 después de descartar las solicitudes por el filtro \code{rp\_filter}.}{fig:p2-martian}
 
-Configurar un router fue interesante porque la consola de Quagga imita la de los routers Cisco (\code{configure terminal}, \code{ip route}, \code{show ip route}, \code{write}), y porque cada comando tiene un efecto inmediato y visible en la tabla de rutas. A la vez, el ejemplo muestra el límite de las rutas estáticas. Aquí bastó una ruta por router, pero en una red más grande habría que escribir a mano una ruta por cada red remota en cada router, y corregirlas cada vez que la red cambia, que es lo que automatizan los protocolos de ruteo como BGP. Por último, \code{write} guarda la configuración en \code{/etc/quagga/Quagga.conf}, pero en Einar cada equipo arranca desde una copia nueva de su disco, así que la configuración se pierde al detener el laboratorio.
+Configurar un router es interesante porque cada comando tiene un efecto inmediato y visible en la tabla de rutas. A la vez, muestra el límite de las rutas estáticas: en una red grande habría que escribir y mantener a mano una ruta por red remota en cada router, que es lo que automatizan los protocolos de ruteo como BGP.
 
 \section{Ejemplo: BGP con Einar}
 % Paso 3 (+1.0).
+El ejemplo usa la misma red, así que se reinició el laboratorio del paso 2. Como Einar arranca cada equipo desde una copia nueva de su disco, las rutas estáticas desaparecen; en su lugar, R1 y R2 se configuraron como routers BGP, con los ASN 65001 y 65002.
+
+\subsection{Ejecución}
+Cada router declara su ASN, anuncia su red y define al otro como vecino, con su IP en 192.168.10.0/24 y su ASN (figura~\ref{fig:p3-bgp}):
+\begin{salida}
+R1_Enredados(config)# router bgp 65001
+R1_Enredados(config-router)# network 192.168.1.0/24
+R1_Enredados(config-router)# neighbor 192.168.10.2 remote-as 65002
+
+R2_Enredados(config)# router bgp 65002
+R2_Enredados(config-router)# network 192.168.2.0/24
+R2_Enredados(config-router)# neighbor 192.168.10.1 remote-as 65001
+\end{salida}
+Sin ninguna ruta escrita a mano, el ping entre PC1 y PC2 funciona en ambos sentidos (figura~\ref{fig:p3-red}). En \code{show ip bgp}, R1 tiene su red, con siguiente salto 0.0.0.0, y la de R2, con siguiente salto 192.168.10.2 y \field{AS-path} 65002 i: el AS de origen y el origen IGP que da \code{network}. \code{show ip route} la muestra como ruta B, con distancia administrativa 20.
+
+\captura{img/paso3/bgp.png}{Configuración BGP de R1 (izquierda) y R2 (derecha).}{fig:p3-bgp}
+
+\captura{img/paso3/red.png}{Con BGP, cada router tiene una ruta B hacia la red del otro (izquierda) y el ping entre PC1 y PC2 funciona en ambos sentidos (derecha).}{fig:p3-red}
+
+Luego R1 anunció también 192.168.100.0/24, con otro \code{network} y \code{clear ip bgp 192.168.10.2 soft out} para reenviar sus anuncios, y R2 la aprendió (figura~\ref{fig:p3-red100}). Para que R2 conozca solo 192.168.1.0/24, R1 le aplica una prefix-list de salida:
+\begin{salida}
+R1_Enredados(config)# ip prefix-list salida_R2 seq 10 permit 192.168.1.0/24
+R1_Enredados(config)# router bgp 65001
+R1_Enredados(config-router)# neighbor 192.168.10.2 prefix-list salida_R2 out
+R1_Enredados# clear ip bgp 192.168.10.2 soft out
+\end{salida}
+R1 deja de anunciar 192.168.100.0/24, que desaparece de las tablas de R2 aunque R1 la conserva (figura~\ref{fig:p3-salida}).
+
+\captura{img/paso3/red100.png}{R1 anuncia 192.168.100.0/24 (izquierda) y R2 la aprende (derecha).}{fig:p3-red100}
+
+\captura{img/paso3/filtro_salida.png}{Con el filtro de salida, R1 anuncia solo 192.168.1.0/24 (izquierda) y R2 pierde la ruta a 192.168.100.0/24 (derecha).}{fig:p3-salida}
+
+En sentido contrario, R2 anunció 192.168.200.0/24 y R1 la aprendió (figura~\ref{fig:p3-red200}). Para rechazarla, R1 aplica a lo que recibe de R2 una prefix-list de entrada que la niega y permite todo lo demás:
+\begin{salida}
+R1_Enredados(config)# ip prefix-list entrada seq 10 deny 192.168.200.0/24
+R1_Enredados(config)# ip prefix-list entrada seq 1000 permit any
+R1_Enredados(config)# router bgp 65001
+R1_Enredados(config-router)# neighbor 192.168.10.2 prefix-list entrada in
+R1_Enredados# clear ip bgp 192.168.10.2 soft in
+\end{salida}
+Con \code{soft in}, R1 pide a R2 que reenvíe sus rutas (route refresh), sin cortar la sesión, y las filtra: 192.168.200.0/24 desaparece de R1, aunque R2 la sigue anunciando (figura~\ref{fig:p3-entrada}).
+
+\captura{img/paso3/red200.png}{R2 anuncia 192.168.200.0/24 (derecha) y R1 la aprende (izquierda).}{fig:p3-red200}
+
+\captura{img/paso3/filtro_entrada.png}{Con el filtro de entrada, R1 ya no tiene 192.168.200.0/24 (izquierda), aunque R2 la sigue anunciando (derecha).}{fig:p3-entrada}
 
 \subsection{Observaciones}
-\pendiente{desafíos encontrados y aspectos interesantes del ejemplo. Preguntas guía: ¿qué costó entender?, ¿qué partes ayudaron a entender BGP y por qué?, ¿es interesante (o no) configurar un router BGP y por qué?}
+Lo que más costó fue, otra vez, Einar: al reiniciar el laboratorio, R2 y luego PC2 no arrancaron (Device 769 (vbd) could not be connected). Al detener un laboratorio, Einar libera los dispositivos loop mientras cada equipo aún borra la copia de su disco, y si ese borrado falla quedan archivos en \code{/tmp/cow\_backing} que impiden recrearla; borrarlos desde dom0 lo solucionó. Del ejemplo en sí, costó que los cambios no fueran inmediatos: Quagga espacia las actualizaciones a cada vecino eBGP (hasta 30 s), así que justo después del \code{clear}, R1 aún no anunciaba la red nueva.
 
-\subsection{Capturas}
-\captura{img/paso3/red.png}{Laboratorio del ejemplo BGP en funcionamiento.}{fig:p3-red}
-\captura{img/paso3/bgp.png}{Configuración de los routers BGP.}{fig:p3-bgp}
-\captura{img/paso3/filtros.png}{Cambios producidos por los filtros.}{fig:p3-filtros}
+Lo que más ayudó a entender BGP fue el contraste con el paso 2, donde las mismas rutas había que escribirlas a mano, y mirar los dos lados de la sesión a la vez: \code{advertised-routes} muestra lo que un router anuncia y \code{show ip bgp} en el otro, lo que aceptó. Así se ve que el filtro de salida cambia lo que R1 anuncia, y el de entrada, solo lo que R1 acepta. También se ve que una prefix-list niega todo lo que no permite: \code{salida\_R2} bastó para bloquear 192.168.100.0/24, y por eso \code{entrada} termina con \code{permit any}, sin la cual R1 rechazaría también 192.168.2.0/24.
+
+Configurar un router BGP es interesante porque bastan tres líneas para que la red se arme sola, y porque las prefix-lists muestran lo propio de BGP: cada sistema autónomo decide qué anuncia y qué acepta. Además, R1 anunció 192.168.100.0/24 sin tener esa red y R2 la aceptó igual: BGP confía en sus vecinos, lo que permite los secuestros de prefijos y explica por qué filtrar.
 
 \section{Configuración de la red}
 % Paso 4 (+0.8).
@@ -694,9 +720,9 @@ En la elaboración de este informe se utilizó un modelo de inteligencia artific
 
 Su uso se resume a:
 \begin{itemize}
-	\item Explicar el funcionamiento de Einar y de la consola Quagga de sus routers.
+	\item Explicar el funcionamiento de Einar y de la consola Quagga de sus routers, y diagnosticar la falla de Einar que impedía iniciar equipos al reiniciar un laboratorio.
 	\item Escribir los scripts que crean la máquina virtual de Einar, toman sus capturas de pantalla y escriben las configuraciones en sus consolas.
-	\item Ejecutar sobre la máquina virtual el ejemplo de configuración de rutas y redactar la sección correspondiente a partir de sus capturas.
+	\item Ejecutar sobre la máquina virtual los ejemplos de rutas estáticas y de BGP, y redactar las secciones correspondientes a partir de sus capturas.
 \end{itemize}
 
 El modelo se empleó como herramienta de consulta y explicación para comprender mejor los temas técnicos, y como apoyo en la ejecución y documentación de las pruebas.

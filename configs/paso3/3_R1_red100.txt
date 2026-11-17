@@ -1,0 +1,7 @@
+configure terminal
+router bgp 65001
+network 192.168.100.0/24
+exit
+exit
+write
+clear ip bgp 192.168.10.2 soft out

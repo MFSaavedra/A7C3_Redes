@@ -1,0 +1,7 @@
+configure terminal
+router bgp 65002
+network 192.168.2.0/24
+neighbor 192.168.10.1 remote-as 65001
+exit
+exit
+write

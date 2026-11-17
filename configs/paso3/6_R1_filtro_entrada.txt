@@ -1,0 +1,8 @@
+configure terminal
+ip prefix-list entrada seq 10 deny 192.168.200.0/24
+ip prefix-list entrada seq 1000 permit any
+router bgp 65001
+neighbor 192.168.10.2 prefix-list entrada in
+exit
+exit
+clear ip bgp 192.168.10.2 soft in

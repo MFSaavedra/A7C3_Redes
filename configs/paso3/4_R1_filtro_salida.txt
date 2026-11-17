@@ -1,0 +1,7 @@
+configure terminal
+ip prefix-list salida_R2 seq 10 permit 192.168.1.0/24
+router bgp 65001
+neighbor 192.168.10.2 prefix-list salida_R2 out
+exit
+exit
+clear ip bgp 192.168.10.2 soft out

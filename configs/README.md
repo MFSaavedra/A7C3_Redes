@@ -11,6 +11,8 @@ router bgp 65000
 end
 ```
 
+Cuando un paso tiene varias etapas, los archivos se numeran en el orden en que se aplican y llevan el router y la etapa en el nombre (`paso3/1_R1_bgp.txt`, `paso3/4_R1_filtro_salida.txt`, ...).
+
 Para escribirlos en Einar, ponga el foco en la consola del router y ejecute
 `sh einar/einar.sh teclear configs/paso5/R0.txt`. La distribución del teclado de Einar debe estar
 en US (enlace Keyboard layout de la página de inicio).
